@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Training data and generated model outputs
+/track/
+/outputs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
