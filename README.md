@@ -1,90 +1,93 @@
-🚗 Complete Self-Driving Car (Behavioral Cloning)
+# Self-Driving Car
 
-This project trains a deep neural network to drive a car autonomously on a virtual track using the Udacity Self-Driving Car Simulator. It uses Behavioral Cloning, where the model learns to clone human driving behavior by mapping front-facing camera images to steering angles.
+A behavioral-cloning project that trains a convolutional neural network to predict steering angles from camera images captured by the Udacity Self-Driving Car Simulator. A Python server loads the trained model and returns steering and throttle commands to the simulator over Socket.IO.
 
-🛠️ Tech Stack & Requirements
+> **Safety:** This project is for simulation and educational use only. It is not designed or validated for controlling a real vehicle.
 
-This project relies on a very specific environment stack to enable Native Windows GPU Acceleration using an NVIDIA GPU (e.g., RTX 4050).
+## Features
 
-Python: 3.10.11 (Strictly required for Windows Native GPU support)
+- Predicts steering angles from the simulator's front-facing camera.
+- Preprocesses camera frames before inference.
+- Adjusts throttle based on the reported vehicle speed.
+- Includes Jupyter notebooks for model development and training.
 
-TensorFlow / Keras: 2.10.0 (Last version to support Native Windows GPU)
+## Project structure
 
-CUDA Toolkit: 11.2
+```text
+.
+├── drive.py                     # Socket.IO server and real-time inference
+├── model/
+│   └── model.h5                 # Model loaded by drive.py
+├── outputs/                     # Generated model artifacts
+├── track/                       # Local simulator/training data
+├── Self_drive.ipynb             # Training notebook
+├── Self_Driving_Car_Fixed.ipynb # Updated/fixed notebook
+└── requirements.txt             # Python dependencies
+```
 
-cuDNN: 8.1.1
+## Requirements
 
-Simulator: Udacity Self-Driving Car Simulator
+- Windows
+- Python 3.10
+- Udacity Self-Driving Car Simulator
+- For native Windows GPU acceleration: an NVIDIA GPU, CUDA Toolkit 11.2, and cuDNN 8.1
 
-📦 Installation & Setup
+TensorFlow 2.10.x is the final TensorFlow release with native Windows GPU support. CPU inference does not require CUDA or cuDNN.
 
-1. Create the Environment
+## Setup
 
-You must use Python 3.10. Create and activate your virtual environment:
+Open PowerShell in the project directory and create a virtual environment:
 
+```powershell
 py -3.10 -m venv .venv10
 .\.venv10\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
+If PowerShell does not allow activation, use Command Prompt instead:
 
-2. Install Dependencies
+```bat
+.venv10\Scripts\activate.bat
+```
 
-Due to version conflicts with the older Udacity simulator and TensorFlow 2.10, run these exact commands to install the perfectly balanced stack:
+The dependency versions are defined in [`requirements.txt`](requirements.txt). For native Windows GPU support, install the CUDA and cuDNN versions listed above and make their runtime DLLs available on `PATH`. Otherwise, TensorFlow can run on the CPU.
 
-# Install legacy GPU-enabled TensorFlow and compatible NumPy
-pip install tensorflow-gpu==2.10.0 keras==2.10.0 "numpy<2" protobuf==3.19.6
+## Run the simulator server
 
-# Install compatible OpenCV and data tools
-pip install "opencv-python<5" "opencv-contrib-python<5" "ml-dtypes<0.4" pandas matplotlib imgaug
+1. Make sure the trained model exists at `model/model.h5`. This is the path loaded by `drive.py`.
+2. Activate the virtual environment and start the server:
 
-# Install legacy Socket.IO required to communicate with the Udacity Simulator
-pip install python-socketio==4.6.1 python-engineio==3.13.2 Flask eventlet Pillow
+   ```powershell
+   python drive.py
+   ```
 
+3. Start the Udacity Self-Driving Car Simulator, select a track, and enable autonomous mode. The simulator should connect to the server on port `4567`.
 
-3. GPU Configuration (Windows Native)
+The server binds to `0.0.0.0:4567` so the simulator can reach it. Keep the port accessible only to trusted local applications and networks.
 
-If TensorFlow fails to detect your GPU or throws cudnn DLL errors:
+## Train or update the model
 
-Download CUDA Toolkit 11.2.2 and install it.
+Open either notebook in Jupyter:
 
-Download cuDNN v8.1.1.
+```powershell
+python -m jupyter notebook
+```
 
-Extract the cuDNN .zip file, open the bin folder, and copy all the .dll files.
+Run the notebook cells to follow the data preparation and training workflow. Save or copy the resulting model to `model/model.h5` before starting `drive.py`.
 
-Paste these .dll files directly into your virtual environment's script folder: .venv10\Scripts\.
+## Inference pipeline
 
-🚀 Usage
+For each telemetry message, `drive.py`:
 
-1. Start the AI Server
+1. Decodes the camera image and crops the frame to remove parts of the sky and vehicle hood.
+2. Converts the image to YUV, applies a Gaussian blur, resizes it to 200 × 66 pixels, and scales pixel values.
+3. Uses the loaded Keras model to predict a steering angle.
+4. Calculates throttle from the reported speed and a speed limit of 10.
+5. Sends the steering and throttle values back to the simulator.
 
-Activate your environment and run the driving script:
+## Notes
 
-python drive.py
-
-
-You should see wsgi starting up on http://0.0.0.0:4567 in your terminal.
-
-2. Launch the Simulator
-
-Open the Udacity Self-Driving Car Simulator executable.
-
-Select your graphics settings and track.
-
-Click on Autonomous Mode.
-
-The simulator will connect to the drive.py server. Your terminal will print the telemetry data (steering angle, throttle, speed), and the car will begin driving itself!
-
-📁 Project Structure
-
-drive.py: The Flask server that handles the Socket.IO connection to the simulator. It loads the trained model, preprocesses incoming camera frames, predicts the steering angle, and sends throttle/steering commands back to the car.
-
-model.h5: The compiled and trained Keras neural network model.
-
-Self_Driving_Car.ipynb: The Jupyter Notebook used to build, compile, and train the Convolutional Neural Network (CNN).
-
-🧠 How It Works
-
-Image Preprocessing: Images from the simulator's center camera are cropped (to remove the sky and car hood), converted to YUV color space, blurred to reduce noise, and normalized.
-
-Prediction: The preprocessed image is fed into the loaded Keras model (model.h5).
-
-Control: The model outputs a continuous value for the steering angle. The throttle is dynamically calculated based on the current speed, and both values are emitted back to the simulator via WebSockets.
+- `track/` and `outputs/` are intended for local data and generated artifacts and are excluded from Git.
+- `model/model.h5` is not excluded; keep the inference model available when deploying or running the server.
+- Do not commit private credentials or simulator data you do not have permission to share.
