@@ -21,6 +21,7 @@ env/
 # Training data and generated model outputs
 /track/
 /outputs/
+/~/
 
 # OS files
 .DS_Store
